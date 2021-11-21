@@ -1,4 +1,4 @@
-https://pypi.org/project/pytrait/0.0.1/
+Find the package here: https://pypi.org/project/pytrait/0.0.2/
 
 PyTrait
 =======
