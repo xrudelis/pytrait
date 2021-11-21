@@ -24,7 +24,7 @@ class Person(metaclass=Trait):
         pass
 
 
-class ImplAnimal(Animal, metaclass=Impl, target="Englishman"):
+class ImplAnimal(Animal, metaclass=Impl, target="Person"):
     """All people are also animals"""
 
     def name(self) -> str:
