@@ -1,3 +1,5 @@
+https://pypi.org/project/pytrait/0.0.1/
+
 PyTraits
 ========
 
