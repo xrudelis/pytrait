@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import pytrait
 from pytrait import Trait
@@ -13,6 +13,10 @@ class Impl(Trait):
 
     Impl is a metaclass, and must subclass the metaclass Trait because classes of type
     Impl subclass classes of type Trait.
+
+    If `target` is provided (the name of the Struct or Trait this Impl provides
+    implementation for), then we relax the requirement for the Impl class to be
+    named ImplMyTraitForTarget.
     """
 
     registry: Dict[str, List["Impl"]] = dict()
@@ -23,7 +27,7 @@ class Impl(Trait):
         name,
         bases,
         attrs,
-        check_naming_convention: bool = True,
+        target: Optional[str] = None,
     ):
         if cls.__class__ is Impl:
             # We require an explicit base class here, unlike with Struct, because if the
@@ -37,8 +41,12 @@ class Impl(Trait):
                 )
             base = bases[0]
             cls.trait_name = base.__name__
-            prefix_len = len(f"Impl{cls.trait_name}For")
-            cls.target_name = name[prefix_len:]
+
+            if target is None:
+                prefix_len = len(f"Impl{cls.trait_name}For")
+                cls.target_name = name[prefix_len:]
+            else:
+                cls.target_name = target
 
             # Look for target in Trait registry so that we know if this is a blanket
             # impl or not
@@ -51,11 +59,11 @@ class Impl(Trait):
                         f"Trait, got {base.__class__.__name__}"
                     )
 
-                if check_naming_convention:
-                    if not name.startswith(f"Impl{cls.trait_name}For"):
+                if target is None:
+                    if name != f"Impl{cls.trait_name}For{cls.target_name}":
                         raise pytrait.NamingConventionError(
-                            "We recommend naming all Impl classes like "
-                            "ImplTraitForStruct."
+                            "We require either naming all Impl classes like "
+                            "ImplTraitForStruct, or providing the target argument."
                         )
 
                 # Check that we implement all Trait abstract methods

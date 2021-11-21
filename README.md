@@ -1,7 +1,7 @@
 https://pypi.org/project/pytrait/0.0.1/
 
-PyTraits
-========
+PyTrait
+=======
 
 Do you like Python, but think that multiple inheritance is a bit too flexible? Are you
 looking for a more constrained way to define interfaces and re-use code?
@@ -26,6 +26,14 @@ another type that it bestows implementation upon. This would be either a concret
 (always a `Struct`) or all such concrete classes implementing a given `Trait`.
 
 
+    from pytrait import Trait, abstractmethod    
+
+    class MyTrait(metaclass=Trait):
+        @abstractmethod
+        def my_method(self) -> str:
+            pass
+
+
 Structs
 -------
 
@@ -34,17 +42,40 @@ Structs, so whenever you see `metaclass=Struct`, the class is also a dataclass.
 Don't get confused with the existing Python module `struct` -- that one is lower-case.
 
 
+    from pytrait import Struct
+
+    class MyStruct(metaclass=Struct):
+        my_message: str = "this is a dataclass"
+
+        def __post_init__(self):
+            assert my_message == "this is a dataclass"
+
+
 Impls
 -----
 
+`Impl`s bring together `Trait`s and `Struct`s. They represent the implementation details
+that satisfy one particular interface.
+
 Why isn't the implementation just all together under the `Struct`? Organization,
-mostly. Also, "blanket" `Impl`s can provide implementation for any struct implementing
+mostly. Also, "blanket" `Impl`s can provide implementation for any `Struct` implementing
 a given `Trait`, so `Impl`s allow for greater code re-use.
 
-`Impl`s have a strict naming convention, like `ImplMyTraitForMyStruct`. This is used to
-automate the list of implementations for `MyStruct`; you don't need to explicitly list
-any superclasses of `MyStruct`, just based on the `Impl` name it will inherit from all
-relevant `Impl`s.
+`Impl`s have to indicate which `Struct`s they bestow implementation upon. You can
+follow a strict naming convention, like `ImplMyTraitForMyStruct`. This is sufficient.
+Or, you can use any name you want so long as you also provide a keyword argument
+`target="StructName"` alongside the `metaclass` argument.
+
+
+    from pytrait import Impl
+
+    class MyImpl(MyTrait, metaclass=Impl, target="MyStruct"):
+        ...
+
+
+This is used to automate the list of implementations for `MyStruct`; you don't need to
+explicitly list any superclasses of `MyStruct`, just based on the `Impl` name it will
+inherit from all relevant `Impl`s.
 
 
 FAQ

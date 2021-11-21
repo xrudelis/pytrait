@@ -30,7 +30,7 @@ class Trait(ABCMeta):
     allowed_attrs = (
         "__doc__",
         "__module__",
-        "__qualname__"
+        "__qualname__",
     )
 
     # Keep track of all available traits by name
