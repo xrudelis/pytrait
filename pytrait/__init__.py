@@ -5,4 +5,8 @@ from pytrait.trait import Trait
 from pytrait.impl import Impl
 from pytrait.struct import Struct
 
+<<<<<<< HEAD
 print('Bruhh')
+=======
+print('bruh')
+>>>>>>> a-test
