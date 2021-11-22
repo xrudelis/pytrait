@@ -49,5 +49,6 @@ class Englishman(metaclass=Struct):
         return "Good day to you, sir!"
 
 
-johnny = Englishman("John")
-johnny.talk()
+if __name__ == "__main__":
+    johnny = Englishman("John")
+    johnny.talk()

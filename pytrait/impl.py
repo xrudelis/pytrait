@@ -1,4 +1,5 @@
-from typing import Dict, List, Optional
+from abc import ABCMeta
+from typing import Any, Dict, Generator, List, Optional, Tuple
 
 import pytrait
 from pytrait import Trait
@@ -24,77 +25,83 @@ class Impl(Trait):
 
     def __init__(
         cls,
-        name,
-        bases,
-        attrs,
+        name: str,
+        bases: Tuple[type],
+        attrs: Dict[str, Any],
         target: Optional[str] = None,
     ):
-        if cls.__class__ is Impl:
-            # We require an explicit base class here, unlike with Struct, because if the
-            # substring "For" is in either a trait or target name, then our naming
-            # convention would be ambiguous.
-            if len(bases) != 1:
-                basenames = tuple(base.__name__ for base in bases)
-                raise pytrait.InheritanceError(
-                    f"Impl {name} must list exactly 1 Trait as a base class, got: "
-                    f"{basenames}"
-                )
-            base = bases[0]
-            cls.trait_name = base.__name__
+        # We require an explicit base class here, unlike with Struct, because if the
+        # substring "For" is in either a trait or target name, then our naming
+        # convention would be ambiguous. Alternatively, the argument "target" can be
+        # provided, with the name of the target Struct or Trait.
+        if len(bases) != 1:
+            basenames = tuple(base.__name__ for base in bases)
+            raise pytrait.InheritanceError(
+                f"Impl {name} must list exactly 1 Trait as a base class, got: "
+                f"{basenames}"
+            )
 
+        base = bases[0]
+        cls.trait_name = base.__name__
+        if target is None:
+            prefix_len = len(f"Impl{cls.trait_name}For")
+            cls.target_name = name[prefix_len:]
+        else:
+            cls.target_name = target
+
+        if __debug__:
+            cls.require_inherit_traits(name, bases)
+            cls.require_method_attrs(name, attrs)
+            cls.require_no_abstract_methods(name, base, attrs)
             if target is None:
-                prefix_len = len(f"Impl{cls.trait_name}For")
-                cls.target_name = name[prefix_len:]
+                cls.require_naming_convention(name, cls.trait_name, cls.target_name)
+
+        # Add this class to the registry, so that it is automatically chosen as a
+        # superclass for the relevant struct(s)
+
+        # Look for target in Trait registry so that we know if this is a blanket
+        # impl or not
+        blanket_impl = cls.target_name in Trait.trait_registry
+        if blanket_impl:
+            if cls.target_name in Impl.blanket_registry:
+                Impl.blanket_registry[cls.target_name].append(cls)
             else:
-                cls.target_name = target
-
-            # Look for target in Trait registry so that we know if this is a blanket
-            # impl or not
-            blanket_impl = cls.target_name in Trait.trait_registry
-
-            if __debug__:
-                if base.__class__ is not Trait:
-                    raise pytrait.InheritanceError(
-                        f"Impl {name} must inherit from a class of type "
-                        f"Trait, got {base.__class__.__name__}"
-                    )
-
-                if target is None:
-                    if name != f"Impl{cls.trait_name}For{cls.target_name}":
-                        raise pytrait.NamingConventionError(
-                            "We require either naming all Impl classes like "
-                            "ImplTraitForStruct, or providing the target argument."
-                        )
-
-                # Check that we implement all Trait abstract methods
-                base_abstractmethods = set(base.__abstractmethods__)
-                for attr, value in attrs.items():
-                    if callable(value):
-                        if hasattr(base, attr):
-                            if attr in base_abstractmethods:
-                                base_abstractmethods.remove(attr)
-
-                if base_abstractmethods:
-                    abstractmethods = ", ".join(
-                        f"{name}()" for name in base_abstractmethods
-                    )
-                    raise pytrait.PytraitError(
-                        f"Impl {name} must implement required methods: "
-                        f"{abstractmethods}"
-                    )
-
-            # Add this class to the registry, so that it is automatically chosen as a
-            # superclass for the relevant struct(s)
-
-            if blanket_impl:
-                if cls.target_name in Impl.blanket_registry:
-                    Impl.blanket_registry[cls.target_name].append(cls)
-                else:
-                    Impl.blanket_registry[cls.target_name] = [cls]
+                Impl.blanket_registry[cls.target_name] = [cls]
+        else:
+            if cls.target_name in Impl.registry:
+                Impl.registry[cls.target_name].append(cls)
             else:
-                if cls.target_name in Impl.registry:
-                    Impl.registry[cls.target_name].append(cls)
-                else:
-                    Impl.registry[cls.target_name] = [cls]
+                Impl.registry[cls.target_name] = [cls]
 
-        super().__init__(name, bases, attrs)
+        super(ABCMeta, cls).__init__(name, bases, attrs)
+
+    def require_naming_convention(cls, name: str, trait_name: str, target_name: str):
+        if name != f"Impl{trait_name}For{target_name}":
+            raise pytrait.NamingConventionError(
+                "We require either naming all Impl classes like "
+                "ImplTraitForStruct, or providing the target argument."
+            )
+
+    def require_no_abstract_methods(cls, name: str, base: Trait, attrs: Dict[str, Any]):
+        # Check that we implement all Trait abstract methods
+        base_abstractmethods = set(base.__abstractmethods__)
+        for attr, value in attrs.items():
+            if callable(value) and hasattr(base, attr):
+                if attr in base_abstractmethods:
+                    base_abstractmethods.remove(attr)
+
+        if base_abstractmethods:
+            abstractmethods = ", ".join(f"{name}()" for name in base_abstractmethods)
+            raise pytrait.PytraitError(
+                f"Impl {name} must implement required methods: " f"{abstractmethods}"
+            )
+
+    def traits(cls) -> Generator[Trait, None, None]:
+        """
+        Yields traits that this Impl implements.
+
+        This can be multiple because Traits are allowed to inherit from any number of
+        other Traits.
+        """
+        for base in cls.__bases__:
+            yield from base.supertraits()

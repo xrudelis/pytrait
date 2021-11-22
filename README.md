@@ -1,4 +1,4 @@
-Find the package here: https://pypi.org/project/pytrait/0.0.2/
+Find the package here: https://pypi.org/project/pytrait/
 
 PyTrait
 =======
@@ -72,6 +72,13 @@ Or, you can use any name you want so long as you also provide a keyword argument
     class MyImpl(MyTrait, metaclass=Impl, target="MyStruct"):
         ...
 
+or equivalently,
+
+
+    from pytrait import Impl
+
+    class ImplMyTraitForMyStruct(MyTrait, metaclass=Impl):
+        ...
 
 This is used to automate the list of implementations for `MyStruct`; you don't need to
 explicitly list any superclasses of `MyStruct`, just based on the `Impl` name it will
@@ -105,10 +112,3 @@ to choose which implementation to use based on type annotation. If you _really_ 
 let a `Struct` implement two traits that have the same method name, you can always wrap
 your class definition in a try block and catch the `MultipleImplementationError`. Maybe
 you can find a way to make it work.
-
-
-TODO
-====
-
-  - Supertraits
-  - better README
