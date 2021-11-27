@@ -26,12 +26,14 @@ another type that it bestows implementation upon. This would be either a concret
 (always a `Struct`) or all such concrete classes implementing a given `Trait`.
 
 
-    from pytrait import Trait, abstractmethod    
+```python
+from pytrait import Trait, abstractmethod    
 
-    class MyTrait(metaclass=Trait):
-        @abstractmethod
-        def my_method(self) -> str:
-            pass
+class MyTrait(metaclass=Trait):
+    @abstractmethod
+    def my_method(self) -> str:
+        pass
+```
 
 
 Structs
@@ -41,15 +43,15 @@ Python has _dataclasses_, and they're great. We're using them internally for our
 Structs, so whenever you see `metaclass=Struct`, the class is also a dataclass.
 Don't get confused with the existing Python module `struct` -- that one is lower-case.
 
+```python
+from pytrait import Struct
 
-    from pytrait import Struct
+class MyStruct(metaclass=Struct):
+    my_message: str = "this is a dataclass"
 
-    class MyStruct(metaclass=Struct):
-        my_message: str = "this is a dataclass"
-
-        def __post_init__(self):
-            assert my_message == "this is a dataclass"
-
+    def __post_init__(self):
+        assert my_message == "this is a dataclass"
+```
 
 Impls
 -----
@@ -66,19 +68,21 @@ follow a strict naming convention, like `ImplMyTraitForMyStruct`. This is suffic
 Or, you can use any name you want so long as you also provide a keyword argument
 `target="StructName"` alongside the `metaclass` argument.
 
+```python
+from pytrait import Impl
 
-    from pytrait import Impl
-
-    class MyImpl(MyTrait, metaclass=Impl, target="MyStruct"):
-        ...
+class MyImpl(MyTrait, metaclass=Impl, target="MyStruct"):
+    ...
+```
 
 or equivalently,
 
+```python
+from pytrait import Impl
 
-    from pytrait import Impl
-
-    class ImplMyTraitForMyStruct(MyTrait, metaclass=Impl):
-        ...
+class ImplMyTraitForMyStruct(MyTrait, metaclass=Impl):
+    ...
+```
 
 This is used to automate the list of implementations for `MyStruct`; you don't need to
 explicitly list any superclasses of `MyStruct`, just based on the `Impl` name it will
